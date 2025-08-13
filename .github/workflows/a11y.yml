@@ -1,0 +1,33 @@
+name: Accessibility Testing
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  playwright-a11y:
+    name: Playwright Accessibility Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npx playwright test -g "Modal accessibility"
+
+  pa11y-a11y:
+    name: Pa11y Accessibility Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Asenna Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Asenna pa11y-ci
+        run: npm install -g pa11y-ci
+      - name: Suorita saavutettavuustesti
+        run: pa11y-ci --config=pa11yci.json
