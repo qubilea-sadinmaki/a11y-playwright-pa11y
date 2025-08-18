@@ -2,13 +2,19 @@ name: Accessibility Testing
 
 on:
   pull_request:
-  push:
-    branches: [ main ]
+  schedule:
+    # Run at 01:00 Finland time (Europe/Helsinki) on working days.
+    # GitHub Actions cron uses UTC, so we split for DST:
+    # - EEST (UTC+3) approx Apr–Oct → 20:00 UTC previous day (Sun–Thu)
+    # - EET  (UTC+2) Jan–Mar & Nov–Dec → 21:00 UTC previous day (Sun–Thu)
+    - cron: '0 20 * 4-10 0-4'
+    - cron: '0 21 * 1-3,11-12 0-4'
 
 jobs:
   playwright-a11y:
     name: Playwright Accessibility Tests
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,10 +23,25 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps
       - run: npx playwright test -g "Modal accessibility"
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: warn
+      - name: Upload Playwright traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/**/*.zip
+          if-no-files-found: warn
 
   pa11y-a11y:
     name: Pa11y Accessibility Tests
     runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v4
       - name: Asenna Node.js
@@ -29,5 +50,13 @@ jobs:
           node-version: '20'
       - name: Asenna pa11y-ci
         run: npm install -g pa11y-ci
-      - name: Suorita saavutettavuustesti
-        run: pa11y-ci --config=pa11yci.json
+      - name: Suorita saavutettavuustesti ja tallenna raportti
+        run: |
+          pa11y-ci --config=pa11yci.json --reporter json | tee pa11y-report.json
+      - name: Upload Pa11y report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pa11y-report
+          path: pa11y-report.json
+          if-no-files-found: error
