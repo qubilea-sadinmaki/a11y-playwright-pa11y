@@ -2,6 +2,16 @@ name: Accessibility Testing
 
 on:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job to run'
+        type: choice
+        required: true
+        default: 'playwright'
+        options:
+          - playwright
+          - pa11y
   schedule:
     # Run at 01:00 Finland time (Europe/Helsinki) on working days.
     # GitHub Actions cron uses UTC, so we split for DST:
@@ -14,7 +24,7 @@ jobs:
   playwright-a11y:
     name: Playwright Accessibility Tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.job == 'playwright')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,7 +51,7 @@ jobs:
   pa11y-a11y:
     name: Pa11y Accessibility Tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.job == 'pa11y')
     steps:
       - uses: actions/checkout@v4
       - name: Asenna Node.js
